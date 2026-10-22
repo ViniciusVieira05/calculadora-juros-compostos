@@ -75,7 +75,7 @@ lib/
 Pré-requisitos: [Flutter SDK](https://docs.flutter.dev/get-started/install) instalado e um emulador ou celular conectado.
 
 ```bash
-git clone COLE_AQUI_O_LINK_DO_REPOSITORIO
+git clone https://github.com/ViniciusVieira05/calculadora-juros-compostos.git
 cd calculadora_juros_compostos
 flutter pub get
 flutter run
@@ -85,4 +85,4 @@ flutter run
 
 ## 👤 Autor
 
-**SEU NOME** · Programação para Dispositivos Móveis
+**Vinicius Vieira Romão** · Programação para Dispositivos Móveis
