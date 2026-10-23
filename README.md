@@ -4,7 +4,7 @@ Aplicativo Flutter desenvolvido para a disciplina de **Programação para Dispos
 
 ## 🎥 Vídeo de demonstração
 
-[Clique aqui para assistir ao vídeo](COLE_AQUI_O_LINK_DO_VIDEO)
+[Clique aqui para assistir ao vídeo](https://youtube.com/shorts/pq4G85KnKkI?feature=share)
 
 ## 📱 Funcionalidades
 
