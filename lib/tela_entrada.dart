@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'calculo.dart';
+import 'cores.dart';
 import 'tela_resultado.dart';
 
 class TelaEntrada extends StatefulWidget {
@@ -10,7 +11,6 @@ class TelaEntrada extends StatefulWidget {
 }
 
 class _TelaEntradaState extends State<TelaEntrada> {
-
   final _formKey = GlobalKey<FormState>();
 
   final _meses = TextEditingController();
@@ -21,16 +21,25 @@ class _TelaEntradaState extends State<TelaEntrada> {
   final _aporte2 = TextEditingController();
   final _taxa2 = TextEditingController();
 
+  List<TextEditingController> get _controladores =>
+      [_meses, _capital1, _aporte1, _taxa1, _capital2, _aporte2, _taxa2];
+
   String _mensagem = '';
 
   double _numero(TextEditingController c) =>
       double.parse(c.text.replaceAll(',', '.'));
 
-  void _calcular() {
+  void _limpar() {
+    for (final c in _controladores) {
+      c.clear();
+    }
+    setState(() => _mensagem = '');
+  }
+
+  Future<void> _calcular() async {
     if (!_formKey.currentState!.validate()) return;
 
     final meses = int.parse(_meses.text);
-
     final inv1 = calcularInvestimento(
       capitalInicial: _numero(_capital1),
       aporteMensal: _numero(_aporte1),
@@ -46,7 +55,7 @@ class _TelaEntradaState extends State<TelaEntrada> {
 
     setState(() {
       final diferenca = (inv1.montanteFinal - inv2.montanteFinal).abs();
-      final valor = 'R\$ ${diferenca.toStringAsFixed(2)}';
+      final valor = 'R\$ ${diferenca.toStringAsFixed(2).replaceAll('.', ',')}';
       if (inv1.montanteFinal > inv2.montanteFinal) {
         _mensagem = 'O Investimento 1 rende $valor a mais';
       } else if (inv2.montanteFinal > inv1.montanteFinal) {
@@ -56,16 +65,17 @@ class _TelaEntradaState extends State<TelaEntrada> {
       }
     });
 
-    Navigator.push(
+    final reiniciar = await Navigator.push(
       context,
       MaterialPageRoute(
         builder: (context) => TelaResultado(inv1: inv1, inv2: inv2),
       ),
     );
+    if (reiniciar == true) _limpar();
   }
 
   Widget _campo(TextEditingController controller, String rotulo,
-      {bool inteiro = false}) {
+      {String? prefixo, String? sufixo, bool inteiro = false}) {
     return Padding(
       padding: const EdgeInsets.only(bottom: 12),
       child: TextFormField(
@@ -73,7 +83,8 @@ class _TelaEntradaState extends State<TelaEntrada> {
         keyboardType: TextInputType.numberWithOptions(decimal: !inteiro),
         decoration: InputDecoration(
           labelText: rotulo,
-          border: const OutlineInputBorder(),
+          prefixText: prefixo,
+          suffixText: sufixo,
         ),
         validator: (valor) {
           if (valor == null || valor.isEmpty) return 'Preencha este campo';
@@ -82,13 +93,24 @@ class _TelaEntradaState extends State<TelaEntrada> {
               : double.tryParse(valor.replaceAll(',', '.'));
           if (numero == null || numero < 0) return 'Digite um número válido';
           if (inteiro && numero == 0) return 'O período deve ser maior que zero';
-          return null; // null = campo válido
+          return null;
         },
       ),
     );
   }
 
-  Widget _cartao(String titulo, TextEditingController capital,
+  Widget _titulo(String texto, Color cor) {
+    return Row(
+      children: [
+        Container(width: 4, height: 18, color: cor),
+        const SizedBox(width: 8),
+        Text(texto,
+            style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w600)),
+      ],
+    );
+  }
+
+  Widget _cartao(String titulo, Color cor, TextEditingController capital,
       TextEditingController aporte, TextEditingController taxa) {
     return Card(
       child: Padding(
@@ -96,12 +118,11 @@ class _TelaEntradaState extends State<TelaEntrada> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text(titulo,
-                style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
-            const SizedBox(height: 12),
-            _campo(capital, 'Capital inicial (R\$)'),
-            _campo(aporte, 'Aplicação mensal (R\$)'),
-            _campo(taxa, 'Taxa de juros mensal (%)'),
+            _titulo(titulo, cor),
+            const SizedBox(height: 16),
+            _campo(capital, 'Capital inicial', prefixo: 'R\$ '),
+            _campo(aporte, 'Aplicação mensal', prefixo: 'R\$ '),
+            _campo(taxa, 'Taxa de juros', sufixo: '% ao mês'),
           ],
         ),
       ),
@@ -115,22 +136,40 @@ class _TelaEntradaState extends State<TelaEntrada> {
       body: Form(
         key: _formKey,
         child: ListView(
-          padding: const EdgeInsets.all(16),
+          padding: const EdgeInsets.fromLTRB(16, 4, 16, 24),
           children: [
-            _campo(_meses, 'Período (meses)', inteiro: true),
-            _cartao('Investimento 1', _capital1, _aporte1, _taxa1),
-            _cartao('Investimento 2', _capital2, _aporte2, _taxa2),
-            const SizedBox(height: 16),
-            FilledButton(
-              onPressed: _calcular,
-              child: const Text('Comparar'),
+            const Text('Compare dois investimentos',
+                style: TextStyle(fontSize: 22, fontWeight: FontWeight.bold)),
+            const SizedBox(height: 4),
+            const Text(
+              'Preencha os dados abaixo para ver qual rende mais no mesmo período.',
+              style: TextStyle(color: corTextoSuave),
             ),
-            const SizedBox(height: 16),
-            Text(
-              _mensagem,
-              textAlign: TextAlign.center,
-              style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
-            ),
+            const SizedBox(height: 20),
+            _campo(_meses, 'Período', sufixo: 'meses', inteiro: true),
+            const SizedBox(height: 4),
+            _cartao('Investimento 1', corInv1, _capital1, _aporte1, _taxa1),
+            _cartao('Investimento 2', corInv2, _capital2, _aporte2, _taxa2),
+            const SizedBox(height: 8),
+            FilledButton(onPressed: _calcular, child: const Text('Comparar')),
+            const SizedBox(height: 8),
+            OutlinedButton(onPressed: _limpar, child: const Text('Limpar')),
+            if (_mensagem.isNotEmpty) ...[
+              const SizedBox(height: 16),
+              Container(
+                padding: const EdgeInsets.all(14),
+                decoration: BoxDecoration(
+                  color: corPrincipal.withValues(alpha: 0.08),
+                  borderRadius: BorderRadius.circular(10),
+                ),
+                child: Text(
+                  _mensagem,
+                  textAlign: TextAlign.center,
+                  style: const TextStyle(
+                      color: corPrincipal, fontWeight: FontWeight.w600),
+                ),
+              ),
+            ],
           ],
         ),
       ),
@@ -139,7 +178,7 @@ class _TelaEntradaState extends State<TelaEntrada> {
 
   @override
   void dispose() {
-    for (final c in [_meses, _capital1, _aporte1, _taxa1, _capital2, _aporte2, _taxa2]) {
+    for (final c in _controladores) {
       c.dispose();
     }
     super.dispose();
